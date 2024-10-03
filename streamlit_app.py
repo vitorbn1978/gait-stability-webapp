@@ -212,10 +212,10 @@ def calculate_distance_2d(point1, point2):
 
 # Streamlit UI
 st.title("Gait Stability COM Analysis Web App")
-st.write("Insira o peso e a altura do indivíduo e faça o upload de um vídeo para análise.")
+st.write("Insira o peso e a estatura do indivíduo e faça o upload de um vídeo para análise.")
 
 # Entrada para Peso e Altura
-height = st.number_input("Altura (em metros)", min_value=0.5, max_value=2.5, value=1.68)
+height = st.number_input("Estatura (em metros)", min_value=0.5, max_value=2.5, value=1.68)
 weight = st.number_input("Peso (em kg)", min_value=30.0, max_value=150.0, value=70.0)
 
 # Upload do vídeo
