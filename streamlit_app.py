@@ -6,7 +6,7 @@ import pandas as pd
 from io import BytesIO
 
 # Funções para processamento
-def process_video(video_path):
+def process_video(video_path, height, weight):
     # Inicializando o Mediapipe
     mp_pose = mp.solutions.pose
     pose = mp_pose.Pose()
@@ -15,10 +15,6 @@ def process_video(video_path):
     cm_path_scaled = []
     step_widths_2d = []
     mos_values = []
-
-    # Estatura e peso do indivíduo
-    height = 1.68  # em metros
-    weight = 70.0  # em kg
 
     cap = cv2.VideoCapture(video_path)
     frame_width = int(cap.get(3))
@@ -132,8 +128,13 @@ def calculate_distance_2d(point1, point2):
 
 # Streamlit UI
 st.title("Gait Stability COM Analysis Web App")
-st.write("Faça o upload de um vídeo para realizar a análise.")
+st.write("Insira o peso e a altura do indivíduo e faça o upload de um vídeo para análise.")
 
+# Entrada para Peso e Altura
+height = st.number_input("Altura (em metros)", min_value=0.5, max_value=2.5, value=1.68)
+weight = st.number_input("Peso (em kg)", min_value=30.0, max_value=150.0, value=70.0)
+
+# Upload do vídeo
 uploaded_file = st.file_uploader("Escolha um vídeo", type=["mp4", "avi", "mov"])
 
 if uploaded_file is not None:
@@ -142,9 +143,9 @@ if uploaded_file is not None:
     with open(video_path, 'wb') as f:
         f.write(uploaded_file.getbuffer())
     
-    # Processar o vídeo
-    st.write("Processando o vídeo...")
-    processed_video_path = process_video(video_path)
+    # Processar o vídeo com os valores de altura e peso
+    st.write(f"Processando o vídeo para altura: {height} m e peso: {weight} kg...")
+    processed_video_path = process_video(video_path, height, weight)
 
     # Exibir o vídeo processado
     st.video(processed_video_path)
