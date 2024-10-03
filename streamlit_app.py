@@ -43,6 +43,11 @@ def process_video(video_path, height, weight):
             landmarks = results.pose_landmarks.landmark
             body_com = calculate_body_com(landmarks, height, weight)
 
+            # Verificação do retorno do COM
+            if body_com is None or len(body_com) < 3:
+                st.error("Erro ao calcular o centro de massa. Verifique o vídeo e os landmarks.")
+                continue  # Pula para o próximo frame se houver erro no cálculo do COM
+
             lajc = np.array([landmarks[23].x, landmarks[23].y, landmarks[23].z])
             rajc = np.array([landmarks[24].x, landmarks[24].y, landmarks[24].z])
 
@@ -74,7 +79,7 @@ def process_video(video_path, height, weight):
             cv2.putText(frame, "CM", (cm_x_pixel, cm_y_pixel), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         # Calculando a velocidade do CM e a MoS
-        if frame_count > 0:
+        if frame_count > 0 and len(cm_positions) > 1:
             velocity_cm = calculate_velocity(cm_positions, frequency)
             xcom_r = calculate_xcom(cm_positions[-1], velocity_cm[-1], lajc_positions[-1], rajc_positions[-1])
             mos_r = calculate_mos(cm_positions[-1], xcom_r, lajc_positions[-1], rajc_positions[-1])
@@ -107,24 +112,79 @@ def process_video(video_path, height, weight):
 
 # Funções auxiliares
 def calculate_body_com(landmarks, height, weight):
-    # Função do COM aqui
-    pass
+    try:
+        SEGMENT_WEIGHTS = {
+            'head': 0.081 * weight,
+            'torso': 0.497 * weight,
+            'left_arm': 0.0265 * weight,
+            'right_arm': 0.0265 * weight,
+            'left_leg': 0.161 * weight,
+            'right_leg': 0.161 * weight
+        }
+
+        segments = {
+            'head': [0, 1, 2, 3, 4],
+            'torso': [11, 12, 23, 24],
+            'left_arm': [11, 13, 15],
+            'right_arm': [12, 14, 16],
+            'left_leg': [23, 25, 27],
+            'right_leg': [24, 26, 28]
+        }
+
+        weighted_coms = []
+        total_weight = 0
+        for segment, indices in segments.items():
+            # Cálculo do centro de massa do segmento
+            segment_com = calculate_segment_com(landmarks, indices)
+            if segment_com is None:
+                print(f"Erro ao calcular COM para o segmento {segment}")
+                return None
+            weight = SEGMENT_WEIGHTS[segment]
+            weighted_coms.append(segment_com * weight)
+            total_weight += weight
+
+        # Cálculo do COM total
+        overall_com = np.sum(weighted_coms, axis=0) / total_weight
+        return overall_com  # Deve retornar um array ou lista com 3 valores [x, y, z]
+    except Exception as e:
+        print(f"Erro ao calcular o centro de massa: {e}")
+        return None
+
+def calculate_segment_com(landmarks, indices):
+    try:
+        segment_points = np.array([[landmarks[idx].x, landmarks[idx].y, landmarks[idx].z] for idx in indices])
+        com = np.mean(segment_points, axis=0)
+        return com
+    except Exception as e:
+        print(f"Erro ao calcular COM do segmento: {e}")
+        return None
 
 def calculate_velocity(cm_positions, frequency):
-    # Função de cálculo da velocidade aqui
-    pass
+    velocity = np.diff(cm_positions, axis=0) * frequency
+    return np.vstack([velocity, velocity[-1]])  # Para manter o mesmo número de frames
 
 def calculate_xcom(cm, velocity_cm, lajc, rajc):
-    # Função do XCoM aqui
-    pass
+    ll = 0.001 * np.linalg.norm(cm - 0.5 * (lajc + rajc))
+    wo_r = np.sqrt(9.8 / ll)
+    xcom_r = cm + velocity_cm / wo_r
+    return xcom_r
 
 def calculate_mos(cm, xcom, lajc, rajc):
-    # Função do MoS aqui
-    pass
+    r1 = lajc
+    r2 = rajc
+    borda = np.linalg.norm(r2 - r1)
+
+    vet_xcom = np.cross(xcom - r1, r2 - r1)
+    dist_xcom = np.linalg.norm(vet_xcom) / borda
+
+    vet_cm = np.cross(cm - r1, r2 - r1)
+    dist_cm = np.linalg.norm(vet_cm) / borda
+
+    mos = np.minimum(dist_xcom, dist_cm)
+    return mos
 
 def calculate_distance_2d(point1, point2):
-    # Função de cálculo da distância 2D aqui
-    pass
+    return np.linalg.norm(np.array(point1[:2]) - np.array(point2[:2]))
 
 # Streamlit UI
 st.title("Gait Stability COM Analysis Web App")
@@ -152,5 +212,8 @@ if uploaded_file is not None:
 
     # Oferecer o download do CSV
     with open("centro_de_massa_e_step_widths_mos.csv", "rb") as f:
+        csv_data = f.read()
+    st.download_button(label="Baixar CSV com Resultados", data=csv_data, file_name="centro_de_massa_e_step_widths_mos.csv", mime="text/csv")
+:
         csv_data = f.read()
     st.download_button(label="Baixar CSV com Resultados", data=csv_data, file_name="centro_de_massa_e_step_widths_mos.csv", mime="text/csv")
