@@ -231,13 +231,13 @@ if uploaded_file is not None:
     st.write(f"Processando o vídeo para altura: {height} m e peso: {weight} kg...")
     processed_video_path = process_video(video_path, height, weight)
 
-    # Exibir o vídeo processado
-    st.video(processed_video_path)
+    # Opção de baixar o vídeo processado
+    with open(processed_video_path, "rb") as video_file:
+        st.download_button(label="Baixar Vídeo Processado", data=video_file, file_name="processed_video.mp4", mime="video/mp4")
 
     # Oferecer o download do CSV
     with open("centro_de_massa_e_step_widths_mos.csv", "rb") as f:
         csv_data = f.read()
     st.download_button(label="Baixar CSV com Resultados", data=csv_data, file_name="centro_de_massa_e_step_widths_mos.csv", mime="text/csv")
-
 
 
