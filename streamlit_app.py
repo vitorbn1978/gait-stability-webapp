@@ -21,14 +21,9 @@ def process_video(video_path, height, weight):
     frame_height = int(cap.get(4))
     frequency = cap.get(cv2.CAP_PROP_FPS)
 
-    # Verificando se o vídeo está em formato vertical (portrait)
-    if frame_height > frame_width:
-        # Trocar a largura e altura para gravar corretamente
-        new_width = frame_height
-        new_height = frame_width
-    else:
-        new_width = frame_width
-        new_height = frame_height
+    # Mantendo a orientação original do vídeo
+    new_width = frame_width
+    new_height = frame_height
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter('processed_video.mp4', fourcc, 20.0, (new_width, new_height))
@@ -45,10 +40,7 @@ def process_video(video_path, height, weight):
         if not ret:
             break
 
-        # Se o vídeo estiver em formato vertical, rotacionar 90 graus
-        if frame_height > frame_width:
-            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-
+        # Mantendo a orientação original, sem rotação
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = pose.process(image)
 
@@ -212,10 +204,10 @@ def calculate_distance_2d(point1, point2):
 
 # Streamlit UI
 st.title("Gait Stability COM Analysis Web App")
-st.write("Insira o peso e a estatura do indivíduo e faça o upload de um vídeo para análise.")
+st.write("Insira o peso e a altura do indivíduo e faça o upload de um vídeo para análise.")
 
 # Entrada para Peso e Altura
-height = st.number_input("Estatura (em metros)", min_value=0.5, max_value=2.5, value=1.68)
+height = st.number_input("Altura (em metros)", min_value=0.5, max_value=2.5, value=1.68)
 weight = st.number_input("Peso (em kg)", min_value=30.0, max_value=150.0, value=70.0)
 
 # Upload do vídeo
@@ -239,5 +231,3 @@ if uploaded_file is not None:
     with open("centro_de_massa_e_step_widths_mos.csv", "rb") as f:
         csv_data = f.read()
     st.download_button(label="Baixar CSV com Resultados", data=csv_data, file_name="centro_de_massa_e_step_widths_mos.csv", mime="text/csv")
-
-
