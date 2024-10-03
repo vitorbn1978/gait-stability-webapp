@@ -6,7 +6,7 @@ import pandas as pd
 from io import BytesIO
 
 # Funções para processamento
-def process_video(video_path, height, weight):
+def process_video(video_path, estatura, peso):
     # Inicializando o Mediapipe
     mp_pose = mp.solutions.pose
     pose = mp_pose.Pose()
@@ -46,7 +46,7 @@ def process_video(video_path, height, weight):
 
         if results.pose_landmarks:
             landmarks = results.pose_landmarks.landmark
-            body_com = calculate_body_com(landmarks, height, weight)
+            body_com = calculate_body_com(landmarks, estatura, peso)
 
             # Verificação do retorno do COM
             if body_com is None or len(body_com) < 3:
@@ -62,15 +62,15 @@ def process_video(video_path, height, weight):
 
             cm_x_raw = body_com[0]
             cm_y_raw = body_com[1]
-            cm_x_scaled = cm_x_raw * height
-            cm_y_scaled = cm_y_raw * height
+            cm_x_scaled = cm_x_raw * estatura
+            cm_y_scaled = cm_y_raw * estatura
 
             cm_path_raw.append((cm_x_raw, cm_y_raw))
             cm_path_scaled.append((cm_x_scaled, cm_y_scaled))
 
             # Cálculo da Step Width em 2D (ignorando z)
-            left_ankle_2d = [landmarks[27].x * height, landmarks[27].y * height]
-            right_ankle_2d = [landmarks[28].x * height, landmarks[28].y * height]
+            left_ankle_2d = [landmarks[27].x * estatura, landmarks[27].y * estatura]
+            right_ankle_2d = [landmarks[28].x * estatura, landmarks[28].y * estatura]
             step_width_2d = calculate_distance_2d(left_ankle_2d, right_ankle_2d)
             step_widths_2d.append(step_width_2d)
 
@@ -127,15 +127,15 @@ def process_video(video_path, height, weight):
     return 'processed_video.mp4'
 
 # Funções auxiliares
-def calculate_body_com(landmarks, height, weight):
+def calculate_body_com(landmarks, estatura, peso):
     try:
         SEGMENT_WEIGHTS = {
-            'head': 0.081 * weight,
-            'torso': 0.497 * weight,
-            'left_arm': 0.0265 * weight,
-            'right_arm': 0.0265 * weight,
-            'left_leg': 0.161 * weight,
-            'right_leg': 0.161 * weight
+            'head': 0.081 * peso,
+            'torso': 0.497 * peso,
+            'left_arm': 0.0265 * peso,
+            'right_arm': 0.0265 * peso,
+            'left_leg': 0.161 * peso,
+            'right_leg': 0.161 * peso
         }
 
         segments = {
@@ -155,9 +155,9 @@ def calculate_body_com(landmarks, height, weight):
             if segment_com is None:
                 print(f"Erro ao calcular COM para o segmento {segment}")
                 return None
-            weight = SEGMENT_WEIGHTS[segment]
-            weighted_coms.append(segment_com * weight)
-            total_weight += weight
+            peso = SEGMENT_WEIGHTS[segment]
+            weighted_coms.append(segment_com * peso)
+            total_weight += peso
 
         # Cálculo do COM total
         overall_com = np.sum(weighted_coms, axis=0) / total_weight
@@ -204,11 +204,12 @@ def calculate_distance_2d(point1, point2):
 
 # Streamlit UI
 st.title("Gait Stability COM Analysis Web App")
-st.write("Insira o peso e a altura do indivíduo e faça o upload de um vídeo para análise.")
+st.write("Este aplicativo calcula a movimentação do centro de massa (COM), a margem de estabilidade (MoS) e o step width, baseando-se em medidas 2D a partir do vídeo enviado.")
+st.write("Contato: Dr. Vitor Bertoli Nascimento, bertolinascimento.vitor@gmail.com")
 
-# Entrada para Peso e Altura
-height = st.number_input("Altura (em metros)", min_value=0.5, max_value=2.5, value=1.68)
-weight = st.number_input("Peso (em kg)", min_value=30.0, max_value=150.0, value=70.0)
+# Entrada para Peso e Estatura
+estatura = st.number_input("Estatura (em metros)", min_value=0.5, max_value=2.5, value=1.68)
+peso = st.number_input("Peso (em kg)", min_value=30.0, max_value=150.0, value=70.0)
 
 # Upload do vídeo
 uploaded_file = st.file_uploader("Escolha um vídeo", type=["mp4", "avi", "mov"])
@@ -219,9 +220,9 @@ if uploaded_file is not None:
     with open(video_path, 'wb') as f:
         f.write(uploaded_file.getbuffer())
     
-    # Processar o vídeo com os valores de altura e peso
-    st.write(f"Processando o vídeo para altura: {height} m e peso: {weight} kg...")
-    processed_video_path = process_video(video_path, height, weight)
+    # Processar o vídeo com os valores de estatura e peso
+    st.write(f"Processando o vídeo para estatura: {estatura} m e peso: {peso} kg...")
+    processed_video_path = process_video(video_path, estatura, peso)
 
     # Tentar exibir o vídeo processado
     st.video(processed_video_path)
@@ -234,3 +235,4 @@ if uploaded_file is not None:
     with open("centro_de_massa_e_step_widths_mos.csv", "rb") as f:
         csv_data = f.read()
     st.download_button(label="Baixar CSV com Resultados", data=csv_data, file_name="centro_de_massa_e_step_widths_mos.csv", mime="text/csv")
+
