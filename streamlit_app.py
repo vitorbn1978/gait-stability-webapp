@@ -223,6 +223,9 @@ if uploaded_file is not None:
     st.write(f"Processando o vídeo para altura: {height} m e peso: {weight} kg...")
     processed_video_path = process_video(video_path, height, weight)
 
+    # Tentar exibir o vídeo processado
+    st.video(processed_video_path)
+
     # Opção de baixar o vídeo processado
     with open(processed_video_path, "rb") as video_file:
         st.download_button(label="Baixar Vídeo Processado", data=video_file, file_name="processed_video.mp4", mime="video/mp4")
