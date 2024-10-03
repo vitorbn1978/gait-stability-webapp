@@ -21,8 +21,17 @@ def process_video(video_path, height, weight):
     frame_height = int(cap.get(4))
     frequency = cap.get(cv2.CAP_PROP_FPS)
 
+    # Verificando se o vídeo está em formato vertical (portrait)
+    if frame_height > frame_width:
+        # Trocar a largura e altura para gravar corretamente
+        new_width = frame_height
+        new_height = frame_width
+    else:
+        new_width = frame_width
+        new_height = frame_height
+
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('processed_video.mp4', fourcc, 20.0, (frame_width, frame_height))
+    out = cv2.VideoWriter('processed_video.mp4', fourcc, 20.0, (new_width, new_height))
 
     frame_count = 0
     lajc_positions = []
@@ -35,6 +44,10 @@ def process_video(video_path, height, weight):
         ret, frame = cap.read()
         if not ret:
             break
+
+        # Se o vídeo estiver em formato vertical, rotacionar 90 graus
+        if frame_height > frame_width:
+            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = pose.process(image)
@@ -72,9 +85,11 @@ def process_video(video_path, height, weight):
             total_step_width += step_width_2d
             average_step_width = total_step_width / len(step_widths_2d)
 
-            cm_x_pixel = int(cm_x_raw * frame_width)
-            cm_y_pixel = int(cm_y_raw * frame_height)
+            # Convertendo as coordenadas para pixels
+            cm_x_pixel = int(cm_x_raw * new_width)
+            cm_y_pixel = int(cm_y_raw * new_height)
 
+            # Desenhando o centro de massa e os valores no vídeo
             cv2.circle(frame, (cm_x_pixel, cm_y_pixel), 5, (0, 0, 255), -1)
             cv2.putText(frame, "CM", (cm_x_pixel, cm_y_pixel), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
@@ -223,5 +238,6 @@ if uploaded_file is not None:
     with open("centro_de_massa_e_step_widths_mos.csv", "rb") as f:
         csv_data = f.read()
     st.download_button(label="Baixar CSV com Resultados", data=csv_data, file_name="centro_de_massa_e_step_widths_mos.csv", mime="text/csv")
+
 
 
