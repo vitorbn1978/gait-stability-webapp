@@ -96,7 +96,16 @@ def process_video(video_path, height, weight):
     cap.release()
     out.release()
 
-    # Salvando os dados em CSV (opcional para download)
+    # Garantir que todas as listas tenham o mesmo comprimento
+    min_length = min(len(cm_path_raw), len(cm_path_scaled), len(step_widths_2d), len(mos_values))
+
+    # Truncar todas as listas para o comprimento mínimo
+    cm_path_raw = cm_path_raw[:min_length]
+    cm_path_scaled = cm_path_scaled[:min_length]
+    step_widths_2d = step_widths_2d[:min_length]
+    mos_values = mos_values[:min_length]
+
+    # Criar o DataFrame com listas truncadas
     df_cm = pd.DataFrame({
         'X Bruto (normalizado)': [pos[0] for pos in cm_path_raw],
         'Y Bruto (normalizado)': [pos[1] for pos in cm_path_raw],
@@ -214,4 +223,5 @@ if uploaded_file is not None:
     with open("centro_de_massa_e_step_widths_mos.csv", "rb") as f:
         csv_data = f.read()
     st.download_button(label="Baixar CSV com Resultados", data=csv_data, file_name="centro_de_massa_e_step_widths_mos.csv", mime="text/csv")
+
 
